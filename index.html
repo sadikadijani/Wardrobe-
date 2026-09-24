@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Two-Side Wardrobe Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#EDEFEA; --surface:#FFFFFF; --surface2:#F6F7F3; --ink:#1B2226; --muted:#5A666A; --line:#D5DAD3;
+  --accent:#2F6B5A; --accent-ink:#FFFFFF; --accent-soft:#DCEAE3;
+  --ok:#2E7D4F; --warn:#B4661A; --bad:#B23A2E;
+  --scene:#E6E9E3; --floor:#D3D8CF;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#141A1B; --surface:#1C2426; --surface2:#222C2E; --ink:#E6ECE8; --muted:#9AA8A6; --line:#324042;
+    --accent:#6FC2A5; --accent-ink:#0E1A16; --accent-soft:#1F3A32;
+    --ok:#6CCB8F; --warn:#E6A15A; --bad:#EF7A6C;
+    --scene:#1A2224; --floor:#263133;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#141A1B; --surface:#1C2426; --surface2:#222C2E; --ink:#E6ECE8; --muted:#9AA8A6; --line:#324042;
+  --accent:#6FC2A5; --accent-ink:#0E1A16; --accent-soft:#1F3A32;
+  --ok:#6CCB8F; --warn:#E6A15A; --bad:#EF7A6C;
+  --scene:#1A2224; --floor:#263133;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(26px,4vw,36px);line-height:1.1}
+h2{font-size:22px}
+h3{font-size:16px}
+p{margin:0}
+.lede{color:var(--muted);max-width:68ch}
+header{display:flex;flex-direction:column;gap:8px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tab{appearance:none;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:12px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px;font:inherit}
+.tab:hover{border-color:var(--accent)}
+.tab:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tab[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tab .k{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.tab .n{font-weight:600;font-size:16px}
+.tab .d{font-size:13px;color:var(--muted)}
+.main{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+.viewer{position:sticky;top:env(safe-area-inset-top,0px);background:var(--scene);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+#stage{width:100%;height:min(62vh,560px);display:block;touch-action:none}
+.vbar{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 12px;border-top:1px solid var(--line);background:var(--surface);font-size:13px;align-items:center}
+.vbar label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.hint{font-size:12px;color:var(--muted);margin-left:auto}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.ctrl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.ctrl label{font-weight:500;font-size:14px}
+.ctrl output{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;color:var(--accent)}
+.ctrl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.ctrl small{grid-column:1/-1;color:var(--muted);font-size:12px}
+.ctrl.disabled{opacity:.45}
+select{font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px}
+.row label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .s{font-size:12px;color:var(--muted)}
+.checks{display:flex;flex-direction:column;gap:8px}
+.chk{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:14px}
+.pill{font-family:var(--mono);font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap;margin-top:2px}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.grp td{background:var(--surface2);font-weight:600;font-size:13px}
+.btn{appearance:none;border:0;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;font-size:14px;padding:9px 14px;border-radius:8px;cursor:pointer;align-self:flex-start}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+ul.buy,ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;font-size:14px}
+ul.buy li b{font-weight:600}
+.note{font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:4px;background:var(--accent-soft);color:var(--ink);margin-left:4px}
+.mats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mat{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:13px;background:var(--surface)}
+.mat .sw{height:10px;border-radius:3px}
+.mat h3{font-size:15px}
+.mat.rec{border-color:var(--accent)}
+.sectionhead{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between}
+@media (max-width:900px){
+  .main{grid-template-columns:1fr}
+  .viewer{position:relative}
+  .cols{grid-template-columns:1fr}
+  .mats{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .tabs{grid-template-columns:1fr}
+  #stage{height:48vh}
+}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>Two-Side Wardrobe Planner</h1>
+    <p class="lede">A light, free-standing wardrobe you can build with a drill and Hornbach's cutting service: hanging space above (one open space or split in two), two open boxes below for shoes and folded clothes, on a base frame with legs tall enough for a robot vacuum. The child-safe setup keeps it from tipping without any wall or ceiling fixing. Drag the sliders and the 3D model, cut list, shopping list and build steps update together. Screen measurements are in cm, the cut list in mm.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Design">
+    <button class="tab" role="tab" id="tab-A" data-d="A"><span class="k">Design A · recommended</span><span class="n">Plywood box</span><span class="d">All panels cut at Hornbach. Screw together with brackets.</span></button>
+    <button class="tab" role="tab" id="tab-B" data-d="B"><span class="k">Design B · IKEA hybrid</span><span class="n">IKEA boxes + DIY top</span><span class="d">Buy the two lower boxes ready-made, build only the hanging part.</span></button>
+    <button class="tab" role="tab" id="tab-C" data-d="C"><span class="k">Design C · lightest frame</span><span class="n">Open timber frame</span><span class="d">Square battens and thin plywood. Most sawing, lowest weight.</span></button>
+  </div>
+
+  <div class="main">
+    <div class="viewer">
+      <canvas id="stage" aria-label="3D model of the wardrobe"></canvas>
+      <div class="vbar">
+        <label><input type="checkbox" id="showClothes" checked> Clothes</label>
+        <label><input type="checkbox" id="showRobot" checked> Robot vacuum</label>
+        <label><input type="checkbox" id="openDoor"> Open a door</label>
+        <label style="flex:1;min-width:170px">Explode <input type="range" id="explode" min="0" max="1" step="0.01" value="0" style="flex:1;accent-color:var(--accent)"></label>
+        <span class="hint">Drag to rotate · scroll or pinch to zoom</span>
+      </div>
+    </div>
+
+    <div class="panel" id="controls">
+      <div class="ctrl" id="c-W"><label for="W">Width</label><output id="oW"></output><input type="range" id="W" min="80" max="200" step="1"><small id="nW"></small></div>
+      <div class="ctrl" id="c-H"><label for="H">Total height (floor to top)</label><output id="oH"></output><input type="range" id="H" min="150" max="240" step="1"></div>
+      <div class="ctrl" id="c-D"><label for="D">Depth</label><output id="oD"></output><input type="range" id="D" min="45" max="65" step="1"><small id="nD"></small></div>
+      <div class="ctrl" id="c-leg"><label for="leg">Leg height (floor clearance)</label><output id="oleg"></output><input type="range" id="leg" min="8" max="20" step="0.5"></div>
+      <div class="ctrl" id="c-box"><label for="box">Lower box height</label><output id="obox"></output><input type="range" id="box" min="30" max="60" step="1"><small id="nbox"></small></div>
+      <div class="row">
+        <label><input type="checkbox" id="divider"> Split the hanging space in two</label>
+      </div>
+      <div class="ctrl" id="c-split"><label for="split">Split (left share)</label><output id="osplit"></output><input type="range" id="split" min="30" max="70" step="1"><small id="nsplit"></small></div>
+      <div class="ctrl" id="c-robotH"><label for="robotH">Your robot's height</label><output id="orobotH"></output><input type="range" id="robotH" min="7" max="12" step="0.1"><small>Check the spec sheet. Most lidar robots are 9.5–10.5 cm.</small></div>
+      <div>
+        <label for="mat" style="font-weight:500;font-size:14px;display:block;margin-bottom:4px">Panel material</label>
+        <select id="mat">
+          <option value="poplar">18 mm poplar plywood (lightest)</option>
+          <option value="melamine">19 mm white melamine chipboard (cheapest)</option>
+          <option value="birch">18 mm birch plywood (strongest)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label id="l-doors"><input type="checkbox" id="doors" checked> Two doors</label>
+        <label><input type="checkbox" id="back" checked> Back panel</label>
+      </div>
+      <div>
+        <label for="doorType" style="font-weight:500;font-size:14px;display:block;margin-bottom:4px">Door style</label>
+        <select id="doorType">
+          <option value="poly">Plywood frame + frosted polycarbonate (light)</option>
+          <option value="ply">Solid 18 mm poplar plywood</option>
+        </select>
+      </div>
+      <div style="border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:12px">
+        <h3>Stability and child safety</h3>
+        <div class="row">
+          <label><input type="checkbox" id="childSafe"> Child-safe free-standing kit</label>
+        </div>
+        <div class="ctrl" id="c-ext"><label for="ext">Base frame sticks out at the front</label><output id="oext"></output><input type="range" id="ext" min="0" max="20" step="1"><small>Moves the front legs forward, under the doors. The robot still passes underneath.</small></div>
+        <div class="row">
+          <label><input type="checkbox" id="brace"> Brace against the ceiling</label>
+          <label><input type="checkbox" id="anchor"> Fixed to the wall</label>
+        </div>
+        <div class="ctrl" id="c-ceil"><label for="ceil">Your ceiling height</label><output id="oceil"></output><input type="range" id="ceil" min="220" max="265" step="0.5"><small>With the brace on, the wardrobe is built 3 cm lower than the ceiling. Screw-out feet on top close the gap.</small></div>
+        <div class="ctrl"><label for="clothesKg">Clothes on the rails</label><output id="oclothesKg"></output><input type="range" id="clothesKg" min="0" max="50" step="1"></div>
+        <div class="ctrl"><label for="boxKg">Shoes and stuff in the boxes</label><output id="oboxKg"></output><input type="range" id="boxKg" min="0" max="60" step="1"><small>The child test assumes the wardrobe is empty (worst case), so this only affects the everyday pull figure.</small></div>
+      </div>
+      <button class="btn ghost" id="reset" type="button">Reset to defaults</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="panel">
+    <h2>Checks</h2>
+    <div class="checks" id="checks"></div>
+    <p class="note">How the child test works: a 27 kg child (the 60 lb test weight in the US furniture tip-over standard ASTM F2057-23) is modelled two ways. First, hanging from the top front edge and leaning back, which pulls outward with half their weight. Second, standing on the outer edge of an open door. Both are checked with the wardrobe empty. This is a calculation to size the parts, not a certified test, so try it yourself once it's built (see the last build step).</p>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <div class="sectionhead"><h2>Cut list for Hornbach</h2><button class="btn" id="copy" type="button">Copy cut list</button></div>
+      <p class="note" id="cutnote"></p>
+      <div class="tablewrap"><table id="cuts"><thead><tr><th>Part</th><th>Qty</th><th>Length × width (mm)</th></tr></thead><tbody></tbody></table></div>
+      <p class="note">Hornbach Luxembourg's first straight cut is free and further cuts are charged per cut. Very small pieces (roughly under 50 cm long or 23 cm wide) are sometimes refused. For short batten pieces, use your handsaw with a cheap mitre box.</p>
+    </div>
+    <div class="panel">
+      <h2>Shopping list</h2>
+      <ul class="buy" id="buy"></ul>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Build steps</h2>
+    <ol class="steps" id="steps"></ol>
+  </div>
+
+  <div class="panel">
+    <h2>Which wood to buy</h2>
+    <div class="mats">
+      <div class="mat rec"><div class="sw" style="background:#E2C99E"></div><h3>Poplar plywood, 18 mm <span class="tag">pick this</span></h3><p>German: Pappelsperrholz. About 400–450 kg/m³, so roughly a third lighter than chipboard. Screws hold well and you can take it apart and rebuild it many times. Sand the edges, then oil or paint it.</p></div>
+      <div class="mat"><div class="sw" style="background:#F1F1EC;border:1px solid var(--line)"></div><h3>Melamine chipboard, 19 mm</h3><p>German: Spanplatte beschichtet / Möbelbauplatte. Cheapest option and comes already finished, but heaviest (~650–700 kg/m³). Ask Hornbach to edge-band the front edges (Kantenumleimung). Screw holes wear out if you take it apart often.</p></div>
+      <div class="mat"><div class="sw" style="background:#E9CFA3"></div><h3>Birch plywood, 18 mm</h3><p>German: Birke Multiplex. Stiffest, with the nicest visible edges, but heavy and roughly twice the price of poplar. Only worth it if you want bare wood as the finished look.</p></div>
+    </div>
+    <p class="note">For the back, use 3 mm hardboard (HDF / Hartfaserplatte, white on one side). It weighs almost nothing and is the part that stops the wardrobe from wobbling sideways. For the base frame, use planed spruce battens 44 × 44 mm (Rahmenholz gehobelt). The stability comes from a longer base frame and removable concrete slabs hidden in the boxes, not from heavier wood. That keeps every piece you carry light and cheap.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const DEF = {design:'A', W:120, H:180, D:60, leg:15, box:40, split:50, divider:false, robotH:10, mat:'poplar', doors:true, doorType:'poly', back:true,
+  clothes:true, robot:true, openDoor:false, explode:0, childSafe:true, ext:10, brace:false, anchor:false, ceil:250, clothesKg:20, boxKg:10};
+let S = Object.assign({}, DEF);
+try{ const s = JSON.parse(localStorage.getItem('wardrobe-planner-v3')||'null'); if(s) S = Object.assign({}, DEF, s); }catch(e){}
+function save(){ try{ localStorage.setItem('wardrobe-planner-v3', JSON.stringify(S)); }catch(e){} }
+
+const MATS = {
+  poplar:  {name:'18 mm poplar plywood (Pappelsperrholz)', t:1.8, dens:430, color:0xE2C99E, sheet:[250,125]},
+  melamine:{name:'19 mm white melamine chipboard (Spanplatte beschichtet)', t:1.9, dens:680, color:0xF1F1EC, sheet:[280,207]},
+  birch:   {name:'18 mm birch plywood (Birke Multiplex)', t:1.8, dens:680, color:0xE9CFA3, sheet:[250,125]}
+};
+const COL = {batten:0xC79E62, hdf:0xF4F3EE, ikea:0xFAFAF7, metal:0xA7B0B4, leg:0x2B2B2B, robot:0x2E3438, ply12:0xE2C99E, slab:0x9C9B95, poly:0xF4F7F8};
+const B = 4.4;        // batten section, cm
+const FH = 4.4;       // base frame height, cm
+const SLAB = 14.5;    // 40 x 40 x 4 cm concrete paving slab, kg (check the label)
+const CHILD = 27.2;   // 60 lb child, kg
+const LEGIN = 3;      // leg centre inset from the frame edge, cm
+const BATT = 'Battens 44 × 44 mm (planed spruce)';
+
+function freeStanding(){ return !S.anchor && !S.brace; }
+
+function build(){
+  const d = S.design, m = MATS[S.mat];
+  const parts = [], cuts = [], buys = [], steps = [], notes = {};
+  let W = S.W, H = S.brace && !S.anchor ? Math.min(S.ceil - 3, 262) : S.H, D = S.D, boxH = S.box, t = m.t;
+  let rodY = 0, shelfTop = 0, comps = [], xDiv = 0, xDoor = 0, weight = 0, boxMid = 0, zFront = 0;
+  let doorMass = 0, doorW = 0, doorOne = 0, boxRegions = [], boxFloorY = 0, shelfY = null, supports = [];
+  const legs = [];
+  const P = (name, w, h, dd, x, y, z, col, ex, extra) => parts.push(Object.assign({name, w, h, d:dd, x, y, z, col, ex:ex||[0,0,0]}, extra||{}));
+  const cut = (grp, name, qty, L, Wd) => cuts.push({grp, name, qty, L:Math.round(L*10), Wd:Math.round(Wd*10)});
+  const vol = (L, Wd, T, dens, q) => (L/100)*(Wd/100)*(T/100)*dens*(q||1);
+  const ext = (d !== 'C' && S.childSafe && freeStanding()) ? S.ext : 0;
+
+  if(d === 'B'){
+    const mw = W >= 140 ? 80 : 60; W = 2*mw; D = 55; boxH = boxH < 50 ? 40 : 60;
+    notes.W = `Snapped to 2 × ${mw} cm IKEA box width (${W} cm).`;
+    notes.D = 'Fixed at 55 cm to match the IKEA boxes.';
+    notes.box = `Snapped to ${boxH} cm IKEA box height.`;
+  } else { notes.D = D < 55 ? 'Under 55 cm, hangers touch the back or doors.' : ''; }
+
+  // ---------- base frame + legs (A, B) ----------
+  function baseFrame(){
+    const fw = W, zb = -D/2, zf = D/2 + ext, fd = zf - zb, zc = (zf + zb)/2, y = S.leg + FH/2;
+    P('Base frame, long batten', fw, FH, B, 0, y, zf - B/2, COL.batten, [0,-1,.3]);
+    P('Base frame, long batten', fw, FH, B, 0, y, zb + B/2, COL.batten, [0,-1,0]);
+    const sl = fd - 2*B;
+    [-fw/2+B/2, 0, fw/2-B/2].forEach(x => P('Base frame, cross batten', B, FH, sl, x, y, zc, COL.batten, [0,-1,0]));
+    cut(BATT, 'Base frame, long', 2, fw, B);
+    cut(BATT, 'Base frame, cross', 3, sl, B);
+    weight += vol(fw, B, B, 450, 2) + vol(sl, B, B, 450, 3);
+    const n = W > 110 ? 6 : 4;
+    const xs = n === 6 ? [-fw/2+LEGIN, 0, fw/2-LEGIN] : [-fw/2+LEGIN, fw/2-LEGIN];
+    xs.forEach(x => [zf-LEGIN, zb+LEGIN].forEach(z => { legs.push([x,z]); P('Leg', 3.2, S.leg, 3.2, x, S.leg/2, z, COL.leg, [0,-1.5,0], {cyl:true}); }));
+    zFront = zf - LEGIN;
+    return {n, meters: ((2*fw + 3*sl)/100*1.15).toFixed(1)};
+  }
+
+  // ---------- doors ----------
+  function addDoors(yBot, dh, exY, midY){
+    const dt = 1.8, dl = xDoor + W/2 - .15, dr = W/2 - xDoor - .15;
+    const z = D/2 + dt/2 + .2, yc = yBot + dh/2;
+    const nh = dh > 160 ? 4 : dh > 100 ? 3 : 2;
+    const g = '18 mm poplar plywood, doors';
+    let polyPieces = [];
+    [[dl, -W/2 + dl/2, 'left'], [dr, W/2 - dr/2, 'right']].forEach(([dw, xc, side]) => {
+      const hinge = side === 'left' ? -W/2 : W/2;
+      const info = {x:xc, w:dw, hingeX:hinge, side};
+      if(S.doorType === 'ply'){
+        P('Door, ' + side, dw, dh, dt, xc, yc, z, MATS.poplar.color, [0,exY,1.5], Object.assign({door:true, solid:true}, info));
+      } else {
+        const s = 7, r = 7, mr = 10;
+        const f = (nm, w, h, x, y) => P(nm, w, h, dt, x, y, z, MATS.poplar.color, [0,exY,1.5], Object.assign({door:true}, info));
+        f('Door frame', s, dh, xc - dw/2 + s/2, yc);
+        f('Door frame', s, dh, xc + dw/2 - s/2, yc);
+        f('Door frame', dw - 2*s, r, xc, yBot + dh - r/2);
+        f('Door frame', dw - 2*s, r, xc, yBot + r/2);
+        const ow = dw - 2*s;
+        let opens = [];
+        if(midY !== null){
+          f('Door frame', ow, mr, xc, midY);
+          opens = [[yBot + r, midY - mr/2], [midY + mr/2, yBot + dh - r]];
+        } else opens = [[yBot + r, yBot + dh - r]];
+        opens.forEach(([y1, y2]) => {
+          const oh = y2 - y1;
+          P('Door window', ow + 2, oh + 2, .6, xc, (y1+y2)/2, z - dt/2 - .3, COL.poly, [0,exY,1.5], Object.assign({door:true, glass:true}, info));
+          polyPieces.push([oh + 2, ow + 2]);
+        });
+        info.opens = opens.map(([a,b]) => [ow, b - a]);
+      }
+    });
+    const doorM = w => {
+      if(S.doorType === 'ply') return vol(w, dh, dt, 430);
+      const ow = w - 14; let open = 0, poly = 0;
+      polyPieces.slice(0, polyPieces.length/2).forEach(([ph]) => { open += ow*(ph-2); poly += (ow+2)*ph; });
+      return vol(w, dh, dt, 430) - (open/1e4)*(dt/100)*430 + (poly/1e4)*1.3;
+    };
+    const ml = doorM(dl), mr2 = doorM(dr);
+    doorMass = ml + mr2; doorW = Math.max(dl, dr); doorOne = dl >= dr ? ml : mr2;
+    const same = Math.abs(dl-dr) < .15;
+    if(same) cut(g, S.doorType === 'poly' ? 'Door blank (with windows cut out)' : 'Door', 2, dh, dl);
+    else { cut(g, 'Door, left', 1, dh, dl); cut(g, 'Door, right', 1, dh, dr); }
+    if(S.doorType === 'poly'){
+      const n = polyPieces.length/2, ow = Math.round((doorW - 14)*10);
+      const heights = polyPieces.slice(0, n).map(p => Math.round((p[0]-2)*10));
+      notes.doorWindows = `Ask for ${n === 2 ? 'two rectangular cut-outs' : 'one rectangular cut-out'} per door (Rechteckausschnitt), ${ow} mm wide, leaving a 70 mm frame at the sides, top and bottom${n === 2 ? ` and a 100 mm crossbar at the box shelf. Window heights: ${heights[1]} mm (top) and ${heights[0]} mm (bottom)` : `. Window height: ${heights[0]} mm`}. Also ask them to drill ${nh} hinge cups per door on the outer edge.`;
+      const pg = '6 mm opal twin-wall polycarbonate (flutes vertical)';
+      const nm = i => n === 2 ? (i === 0 ? 'Window insert, bottom' : 'Window insert, top') : 'Window insert';
+      if(same) polyPieces.slice(0, n).forEach((p, i) => cut(pg, nm(i), 2, p[0], p[1]));
+      else polyPieces.forEach((p, i) => cut(pg, nm(i % n) + (i < n ? ', left door' : ', right door'), 1, p[0], p[1]));
+    }
+    buys.push(['Doors', (S.doorType === 'poly'
+      ? `Two framed doors: 18 mm poplar blanks with the windows cut out by Hornbach, and 6 mm opal twin-wall polycarbonate (Stegplatte opal) behind the windows. About ${Math.round(doorMass/2)} kg per door. Fix each insert with thin wood strips and 3 × 12 mm screws, or mounting tape plus a few screws.`
+      : `Two solid 18 mm poplar doors, about ${Math.round(doorMass/2)} kg each.`)
+      + ` ${2*nh} × 35 mm cup hinges, full overlay (Topfband aufliegend), with mounting plates. Soft-close is worth the few extra euros. Plus 2 small knobs. Ask Hornbach to drill the hinge cups (Topfbandbohrung), ${nh} per door, the end ones 10 cm from the top and bottom.`]);
+  }
+
+  // ---------- design A ----------
+  if(d === 'A'){
+    const bf = baseFrame();
+    const y0 = S.leg + FH, Hc = H - y0, Wi = W - 2*t;
+    const L = (Wi - t) * S.split/100, R = Wi - t - L;
+    xDiv = -W/2 + t + L + t/2;
+    xDoor = S.divider ? xDiv : 0;
+    P('Side', t, Hc, D, -W/2+t/2, y0+Hc/2, 0, m.color, [-1,0,0]);
+    P('Side', t, Hc, D,  W/2-t/2, y0+Hc/2, 0, m.color, [1,0,0]);
+    P('Top', Wi, t, D, 0, y0+Hc-t/2, 0, m.color, [0,1,0]);
+    P('Bottom', Wi, t, D, 0, y0+t/2, 0, m.color, [0,-.4,0]);
+    const sy = y0 + t + boxH + t/2; shelfY = sy;
+    let area = 2*Hc*D + 2*Wi*D;
+    if(S.divider){
+      P('Divider', t, Hc-2*t, D, xDiv, y0+Hc/2, 0, m.color, [0,0,.6]);
+      P('Shelf, left', L, t, D, -W/2+t+L/2, sy, 0, m.color, [-.4,0,.9]);
+      P('Shelf, right', R, t, D, xDiv+t/2+R/2, sy, 0, m.color, [.4,0,.9]);
+      cut(m.name, 'Side', 2, Hc, D); cut(m.name, 'Top + bottom', 2, Wi, D); cut(m.name, 'Divider', 1, Hc-2*t, D);
+      if(Math.abs(L-R) < .15) cut(m.name, 'Shelf (one per side)', 2, L, D); else { cut(m.name, 'Shelf, left', 1, L, D); cut(m.name, 'Shelf, right', 1, R, D); }
+      area += (Hc-2*t)*D + (L+R)*D;
+      comps = [[-W/2+t, -W/2+t+L], [xDiv+t/2, W/2-t]];
+    } else {
+      P('Box divider', t, boxH, D, xDiv, y0 + t + boxH/2, 0, m.color, [0,-.3,.6]);
+      P('Shelf', Wi, t, D, 0, sy, 0, m.color, [0,0,.9]);
+      P('Shelf stiffener', Wi, B, B, 0, sy - t/2 - B/2, D/2 - B/2 - .5, COL.batten, [0,0,.9]);
+      cut(m.name, 'Side', 2, Hc, D); cut(m.name, 'Top + bottom + shelf', 3, Wi, D); cut(m.name, 'Box divider', 1, boxH, D);
+      cut(BATT, 'Shelf stiffener (under front edge)', 1, Wi, B);
+      weight += vol(Wi, B, B, 450);
+      area += Wi*D + boxH*D;
+      comps = [[-W/2+t, W/2-t]];
+    }
+    if(S.back) P('Back', W, Hc, .3, 0, y0+Hc/2, -D/2-.15, COL.hdf, [0,0,-1.2]);
+    shelfTop = sy + t/2; rodY = y0 + Hc - t - 5; boxMid = y0 + t + boxH/2; boxFloorY = y0 + t;
+    boxRegions = [[-W/2+t, xDiv - t/2], [xDiv + t/2, W/2 - t]];
+    if(S.doors) addDoors(y0 + .2, Hc - .4, 0, sy);
+    if(S.back) { cut('3 mm hardboard back (HDF)', 'Back', 1, Hc, W); weight += vol(W, Hc, .3, 850); }
+    weight += (area/1e4)*(t/100)*m.dens;
+    buys.push(['Panels', `${m.name}. ${sheetText(area, m)}`]);
+    if(S.back) buys.push(['Back', `1 × 3 mm hardboard (HDF), cut to ${Math.round(W*10)} × ${Math.round(Hc*10)} mm`]);
+    buys.push(['Battens', `Planed spruce 44 × 44 mm, about ${bf.meters} m in total${S.divider ? '' : ' plus one shelf stiffener'}`]);
+    buys.push(['Legs', `${bf.n} × furniture legs ${S.leg} cm, adjustable, with screw-on mounting plates (Möbelfüße mit Montageplatte)`]);
+    buys.push(['Brackets', 'about 30 × steel angle brackets ~30 × 30 mm (Winkelverbinder)']);
+    buys.push(['Screws', '4 × 16 mm chipboard screws (box of 200), 4 × 40 mm (box of 50) to fix the box to the frame, 3 × 16 mm for the back']);
+    steps.push(
+      'Send the cut list to Hornbach (online “Holzzuschnitt” or at the cutting desk).' + (S.doors && S.doorType === 'poly' ? ' For the doors, show them the window note under the cut list.' : '') + ' Mark each piece with painter\'s tape when you collect it.',
+      'Build the base frame on the floor: two long battens and three cross battens, two angle brackets per joint.' + (ext ? ` The cross battens are ${Math.round(D + ext - 2*B)} cm long, so the frame sticks out ${ext} cm in front of the wardrobe. That's the anti-tip foot. Round its top front edge with sandpaper.` : '') + ' Screw the leg plates underneath at the corners' + (bf.n === 6 ? ' and under the middle cross batten.' : '.'),
+      'Lay one side panel flat. Stand the top and bottom on its edge and join each with 2–3 angle brackets on the inside. Pre-drill 2.5 mm holes and keep the pieces flush with a square.',
+      S.divider
+        ? 'Add the second side the same way. Measure ' + Math.round(L) + ' cm from the inside of the left side and fix the divider between top and bottom.'
+        : 'Add the second side the same way. Fix the short box divider upright on the bottom panel at ' + Math.round(L) + ' cm from the left side. It also holds up the middle of the shelf.',
+      (S.back ? 'With the box lying face-down, check it is square (both diagonals equal), then screw the hardboard back on every ~20 cm with 3 × 16 mm screws. This is what makes it rigid.' : 'Without a back, add diagonal steel straps (Lochband) across the back.'),
+      'Stand the box up on the base frame, flush with the back edge (two people). Screw down through the bottom panel into the battens with 4 × 40 mm screws, about 6 in total.',
+      S.divider
+        ? 'Put in the two shelves at ' + Math.round(boxH) + ' cm above the bottom, each on 4 angle brackets. Mount the rail holders ~5 cm under the top and clip in the rails.'
+        : 'Put the shelf in at ' + Math.round(boxH) + ' cm above the bottom, resting on brackets at the sides and on the box divider. Screw the stiffener batten under its front edge so it doesn\'t sag. Mount the rail ~5 cm under the top.'
+    );
+  }
+
+  // ---------- design B ----------
+  if(d === 'B'){
+    const bf = baseFrame();
+    const y0 = S.leg + FH, mw = W/2;
+    [-mw/2, mw/2].forEach((x,i) => {
+      const bt = 1.6, e = [i?1:-1,0,.4];
+      P('IKEA box', bt, boxH, D, x-mw/2+bt/2, y0+boxH/2, 0, COL.ikea, e, {ikea:true});
+      P('IKEA box', bt, boxH, D, x+mw/2-bt/2, y0+boxH/2, 0, COL.ikea, e, {ikea:true});
+      P('IKEA box', mw-2*bt, bt, D, x, y0+bt/2, 0, COL.ikea, e, {ikea:true});
+      P('IKEA box', mw-2*bt, bt, D, x, y0+boxH-bt/2, 0, COL.ikea, e, {ikea:true});
+      P('IKEA box', mw, boxH, .3, x, y0+boxH/2, -D/2+.15, COL.ikea, e, {ikea:true});
+    });
+    boxRegions = [[-W/2+1.6, -1.6], [1.6, W/2-1.6]]; boxFloorY = y0 + 1.6;
+    const u0 = y0 + boxH, Hu = H - u0, Wi = W - 2*t;
+    const L = (Wi - t) * S.split/100, R = Wi - t - L;
+    xDiv = -W/2 + t + L + t/2; xDoor = S.divider ? xDiv : 0;
+    P('Side', t, Hu, D, -W/2+t/2, u0+Hu/2, 0, m.color, [-1,.6,0]);
+    P('Side', t, Hu, D,  W/2-t/2, u0+Hu/2, 0, m.color, [1,.6,0]);
+    P('Top', Wi, t, D, 0, u0+Hu-t/2, 0, m.color, [0,1.4,0]);
+    P('Bottom', Wi, t, D, 0, u0+t/2, 0, m.color, [0,.5,0]);
+    let area = 2*Hu*D + 2*Wi*D;
+    cut(m.name, 'Side', 2, Hu, D); cut(m.name, 'Top + bottom', 2, Wi, D);
+    if(S.divider){
+      P('Divider', t, Hu-2*t, D, xDiv, u0+Hu/2, 0, m.color, [0,.6,.6]);
+      cut(m.name, 'Divider', 1, Hu-2*t, D); area += (Hu-2*t)*D;
+      comps = [[-W/2+t, -W/2+t+L], [xDiv+t/2, W/2-t]];
+    } else comps = [[-W/2+t, W/2-t]];
+    if(S.back) P('Back', W, Hu, .3, 0, u0+Hu/2, -D/2-.15, COL.hdf, [0,.6,-1.2]);
+    shelfTop = u0 + t; rodY = u0 + Hu - t - 5; boxMid = y0 + boxH/2;
+    if(S.doors) addDoors(u0 + .2, Hu - .4, .6, null);
+    if(S.back){ cut('3 mm hardboard back (HDF)', 'Back', 1, Hu, W); weight += vol(W, Hu, .3, 850); }
+    weight += (area/1e4)*(t/100)*m.dens;
+    weight += 2*(boxH === 40 ? 9 : 12)*(mw === 80 ? 1.25 : 1);
+    buys.push(['IKEA', `2 × PLATSA frame ${mw} × 55 × ${boxH} cm (open box, clicks together without tools). Skip the LÄTTHET legs: at 11 cm they're too low for most lidar robots, so the boxes sit on your own base frame. Check stock on ikea.lu before going.`]);
+    buys.push(['Panels', `${m.name}. ${sheetText(area, m)}`]);
+    if(S.back) buys.push(['Back', `1 × 3 mm hardboard (HDF), cut to ${Math.round(W*10)} × ${Math.round(Hu*10)} mm`]);
+    buys.push(['Battens', `Planed spruce 44 × 44 mm, about ${bf.meters} m in total`]);
+    buys.push(['Legs', `${bf.n} × furniture legs ${S.leg} cm, adjustable, with mounting plates`]);
+    buys.push(['Brackets', 'about 24 × steel angle brackets ~30 × 30 mm (Winkelverbinder)']);
+    buys.push(['Screws', '4 × 16 mm (box of 200), 4 × 30 mm (box of 50), 3 × 16 mm for the back']);
+    steps.push(
+      'Assemble the two IKEA boxes following the IKEA leaflet. Don\'t fit their legs.',
+      'Build the base frame (two long and three cross battens, angle brackets at each joint) and screw the legs underneath.' + (ext ? ` The frame sticks out ${ext} cm at the front: that's the anti-tip foot.` : ''),
+      'Put both boxes on the frame side by side, flush with the back. Join them with 4 short screws through the touching sides (4 × 30 mm, pre-drilled), then screw each box down into the battens from inside.',
+      'Build the hanging part like a flat-lying box: sides, top and bottom joined with angle brackets' + (S.divider ? ', plus the divider at ' + Math.round(L) + ' cm from the inside of the left side.' : '.'),
+      (S.back ? 'With it lying face-down, check the diagonals are equal and screw on the hardboard back.' : 'Without a back, add diagonal steel straps across the back.'),
+      'Lift the hanging part onto the IKEA boxes (two people). From inside each box, screw up through the box top into its bottom panel: 4 screws per box, max 30 mm long.',
+      'Mount the rail holders ~5 cm below the top and clip in the rail' + (S.divider ? 's.' : '.')
+    );
+  }
+
+  // ---------- design C ----------
+  if(d === 'C'){
+    const p = 1.2;
+    const pz = D/2 - B/2, px = W/2 - B/2, lr = W - 2*B, sr = D - 2*B;
+    const yBot = S.leg, yBox = S.leg + B + p + boxH, yTop = H - B;
+    [[-px,pz],[px,pz],[-px,-pz],[px,-pz]].forEach(([x,z]) => P('Post', B, H, B, x, H/2, z, COL.batten, [Math.sign(x)*1.2,0,Math.sign(z)*.6]));
+    [yBot, yBox, yTop].forEach((y,i) => {
+      [pz,-pz].forEach(z => P('Long rail', lr, B, B, 0, y+B/2, z, COL.batten, [0,(i-1)*.5,Math.sign(z)*.9]));
+      [px,-px].forEach(x => P('Side rail', B, B, sr, x, y+B/2, 0, COL.batten, [Math.sign(x)*1.2,(i-1)*.5,0]));
+    });
+    const Wi = lr, L = (Wi - B) * S.split/100;
+    xDiv = -W/2 + B + L + B/2; xDoor = S.divider ? xDiv : 0;
+    P('Bottom panel', lr, p, D, 0, yBot+B+p/2, 0, COL.ply12, [0,-.2,0]);
+    P('Box divider', p, boxH, D, xDiv, yBot+B+p+boxH/2, 0, COL.ply12, [0,0,.8]);
+    P('Shelf panel', lr, p, D, 0, yBox+B+p/2, 0, COL.ply12, [0,.3,0]);
+    shelfTop = yBox + B + p; boxMid = yBot + B + p + boxH/2; boxFloorY = yBot + B + p; shelfY = yBox + B/2;
+    boxRegions = [[-W/2+B, xDiv - p/2], [xDiv + p/2, W/2 - B]];
+    const cph = yTop - shelfTop, bg = BATT;
+    if(S.divider){
+      P('Top cross rail', B, B, sr, xDiv, yTop+B/2, 0, COL.batten, [0,1,0]);
+      [pz,-pz].forEach(z => P('Centre post', B, cph, B, xDiv, shelfTop+cph/2, z, COL.batten, [0,.4,Math.sign(z)*1.4]));
+      comps = [[-W/2+B, xDiv-B/2], [xDiv+B/2, W/2-B]];
+    } else comps = [[-W/2+B, W/2-B]];
+    if(S.back) P('Back', W, H - S.leg, .3, 0, S.leg + (H-S.leg)/2, -D/2-.15, COL.hdf, [0,0,-1.6]);
+    rodY = yTop - 5; zFront = D/2 - B/2;
+    if(S.doors) addDoors(S.leg + .2, H - S.leg - .4, 0, shelfY);
+    cut(bg, 'Post (also the legs)', 4, H, B);
+    cut(bg, 'Long rail', 6, lr, B);
+    cut(bg, S.divider ? 'Side rail + top cross rail' : 'Side rail', S.divider ? 7 : 6, sr, B);
+    if(S.divider) cut(bg, 'Centre post', 2, cph, B);
+    cut('12 mm poplar plywood', 'Bottom + shelf panel', 2, lr, D);
+    cut('12 mm poplar plywood', 'Box divider', 1, boxH, D);
+    if(S.back){ cut('3 mm hardboard back (HDF)', 'Back', 1, H-S.leg, W); weight += vol(W, H-S.leg, .3, 850); }
+    const bm = 4*H + 6*lr + (S.divider ? 7 : 6)*sr + (S.divider ? 2*cph : 0);
+    weight += vol(bm, B, B, 450) + vol(lr, D, p, 430, 2) + vol(boxH, D, p, 430);
+    buys.push(['Battens', `Planed spruce 44 × 44 mm (Rahmenholz gehobelt), about ${(bm/100*1.1).toFixed(1)} m in total. Pick straight ones by sighting along each length.`]);
+    buys.push(['Panels', '12 mm poplar plywood: 1 sheet covers bottom, shelf and divider']);
+    if(S.back) buys.push(['Back', `1 × 3 mm hardboard (HDF), cut to ${Math.round(W*10)} × ${Math.round((H-S.leg)*10)} mm`]);
+    buys.push(['Brackets', 'about 44 × steel angle brackets ~40 × 40 mm (Winkelverbinder), 2 per rail end']);
+    buys.push(['Screws', '4 × 20 mm (box of 300), 4 × 16 mm for panels, 3 × 16 mm for the back']);
+    buys.push(['Feet', '4 × screw-in adjustable glides for the post ends']);
+    buys.push(['Tools', '1 × plastic mitre box (Gehrungslade) so your handsaw cuts square']);
+    steps.push(
+      'Have Hornbach cut the posts and long rails. Cut the short rails yourself in the mitre box: ' + Math.round(sr) + ' cm long.',
+      'Build two side “ladders” on the floor: 2 posts + 3 side rails each. Bottom rail top edge at ' + Math.round(S.leg + B) + ' cm, middle rail at ' + Math.round(yBox + B) + ' cm, top rail flush with the post tops. Two angle brackets per joint.',
+      'Stand both ladders up and connect them with the 6 long rails at the same three heights (two people, clamps). Measure the diagonals and nudge until they match.',
+      'Drop the bottom panel onto the bottom rails and screw it down. Stand the box divider on it at ' + Math.round(L) + ' cm from the left post, then add the shelf panel and screw it to the divider from above.',
+      S.divider ? 'Fit the two centre posts on the shelf, front and back, joined by the top cross rail. It carries the inner end of each clothes rail.' : 'One rail spans the full width. Add a centre rail support screwed to the top rail so it doesn\'t sag.',
+      (S.back ? 'Screw the hardboard back onto the posts and rails every ~20 cm. Without it the frame sways sideways.' : 'Without a back, screw two diagonal steel straps (Lochband) in an X across the back.'),
+      'Mount the rail holders ~5 cm under the top and add the glides.'
+    );
+  }
+
+  // ---------- rails ----------
+  const spans = comps.map(c => c[1] - c[0]);
+  const needSupport = spans.some(s => s > 100);
+  buys.push(['Hanging', `${comps.length} × oval wardrobe rail (Kleiderstange oval) + ${2*comps.length} end holders, cut to ${spans.map(s => Math.round(s - .3)).join(' and ')} cm with a small hacksaw` + (needSupport ? '. Add 1 centre rail support (Mittelträger) screwed under the top, because the span is over 1 m.' : '')]);
+  if(needSupport) comps.forEach(c => { if(c[1]-c[0] > 100) supports.push((c[0]+c[1])/2); });
+
+  // ---------- stability ----------
+  const top = d === 'C' ? H : H;
+  const doorZ = D/2 + 1;
+  // moments about the front tipping line (legs / posts). Positive = keeps it standing.
+  const Rbody = weight*zFront + doorMass*(zFront - doorZ);
+  const fs = freeStanding();
+  // test 1: child hangs from top front edge, leaning back (vertical 27 kg at door face, outward pull 13.6 kg at the top)
+  const over1 = (CHILD/2)*top + CHILD*((D/2 + 2) - zFront);
+  // test 2: child stands on the outer edge of the widest open door; that door's weight also swings forward
+  const over2 = S.doors ? CHILD*(D/2 + doorW - 3 - zFront) + doorOne*((D/2 + doorW/2) - doorZ) : 0;
+  const worst = Math.max(over1, over2);
+  let slabs = 0;
+  if(fs && S.childSafe){
+    const need = (worst*1.15 - Rbody) / zFront; // 15 % margin
+    slabs = Math.max(0, Math.ceil(need / SLAB));
+  }
+  const ballast = slabs * SLAB;
+  const Rempty = Rbody + ballast*zFront;
+  const childOK = Rempty >= worst*1.15;
+  const childMargin = Rempty / worst;
+  const loadMass = S.clothesKg + S.boxKg;
+  const pullKg = (Rempty + loadMass*zFront) / Math.min(150, H);
+  const emptyPull = Rempty / Math.min(150, H);
+
+  // ballast slabs + false floor
+  if(slabs){
+    const perBox = [Math.ceil(slabs/2), Math.floor(slabs/2)];
+    boxRegions.forEach((r, i) => {
+      const n = perBox[i]; if(!n) return;
+      const cx = (r[0]+r[1])/2, bw = r[1]-r[0];
+      for(let k=0;k<n;k++){
+        const layer = Math.floor(k/Math.max(1, Math.floor(bw/40))), col = k % Math.max(1, Math.floor(bw/40));
+        const perRow = Math.max(1, Math.floor(bw/40));
+        const x = cx + (perRow > 1 ? (col - (perRow-1)/2)*41 : 0);
+        P('Ballast slab', 40, 4, 40, x, boxFloorY + 2 + layer*4.1, -D/2 + 22, COL.slab, [0,0,1.6]);
+      }
+      const layers = Math.ceil(n / Math.max(1, Math.floor(bw/40)));
+      const fh = layers*4.1 + .5;
+      P('False floor', bw - .4, 1.2, D - 2, cx, boxFloorY + fh + .6, 0, COL.ply12, [0,.4,1.2]);
+      notes.falseFloor = (notes.falseFloor||0) + 1; notes.ffh = fh;
+    });
+    const ffw = (boxRegions[0][1]-boxRegions[0][0]) - .4;
+    cut('12 mm poplar plywood', 'False floor over the slabs', notes.falseFloor, ffw, D - 2);
+    buys.push(['Ballast', `${slabs} × concrete paving slabs 40 × 40 × 4 cm (Gehwegplatte / Betonplatte, about ${SLAB} kg each, a few euros apiece). Check the weight on the label: if yours are lighter, buy one more. They lie at the back of the ${slabs > 1 ? 'boxes' : 'box'} under a loose 12 mm plywood false floor, and come out when you move. Stick felt pads under them.`]);
+    buys.push(['False floor', `Spacer strips to hold the false floor ${Math.round(notes.ffh)} cm up: 4 short batten offcuts per box`]);
+  }
+  if(fs && S.childSafe && ext) buys.push(['Anti-tip foot', `Nothing extra: the base frame is ${ext} cm longer at the front.`]);
+  buys.push(stabBuy(slabs));
+  steps.push(stabStep(slabs, ext));
+  if(S.doors) steps.push(S.doorType === 'poly'
+    ? 'Doors: lay each door face-down, place the polycarbonate inserts over the windows (flutes vertical), and hold them with thin strips screwed into the frame. Screw the hinges into the pre-drilled cups, clip them onto the plates on the sides, and adjust the gaps with the hinge screws.'
+    : 'Doors: screw the hinges into the pre-drilled cups, clip them onto the plates on the sides, and adjust the gaps with the hinge screws.');
+  if(fs && S.childSafe) steps.push('Test it once, with the wardrobe empty: stand behind it to catch it, hook a luggage scale to a strap around the top front edge, and pull forward slowly. It should reach about ' + Math.round(emptyPull) + ' kg before the back legs lift. If it lifts earlier, add a slab.');
+
+  const hang = rodY - shelfTop - 4;
+  return {parts, cuts, buys, steps, W, H, D, boxH, hang, rodY, shelfTop, comps, xDiv, weight, doorMass, notes, legs, supports,
+    slabs, ballast, childOK, childMargin, pullKg, emptyPull, ext, zFront, over1, over2};
+}
+
+function stabStep(slabs, ext){
+  if(S.anchor) return 'Fix the top to the wall with the anti-tip strap.';
+  if(S.brace) return 'Stand it in place and level it with the legs. Screw the four top feet out until their rubber pads press firmly on the ceiling (hand-tight plus a quarter turn). Push on the top corner: it shouldn\'t move. Re-check every few months.';
+  let s = 'Stand it in place and level it with the adjustable legs, then screw the front legs out 2–3 mm more than the back ones so it leans very slightly back.';
+  if(S.childSafe && slabs) s += ` Lay the ${slabs} concrete slab${slabs>1?'s':''} flat at the back of the box${slabs>1?'es':''}, put the spacer strips around them and drop the false floor on top.`;
+  return s;
+}
+function stabBuy(slabs){
+  if(S.anchor) return ['Safety', '1 × anti-tip wall strap kit with wall plugs'];
+  if(S.brace && S.design==='C') return ['Ceiling brace', '4 × levelling feet M10 with ~40 mm thread + 4 × M10 threaded inserts for wood + 4 rubber pads, screwed into the top end of each corner post. No holes in the wall or ceiling.'];
+  if(S.brace) return ['Ceiling brace', '4 × levelling feet M10 with ~40 mm thread (Stellfüße) + 4 × M10 T-nuts (Einschlagmuttern) + 4 rubber pads. Drill 12 mm holes through the top panel near each corner, hammer the T-nuts in from underneath, screw the feet in from above. No holes in the wall or ceiling.'];
+  return ['Stability', '2 × anti-slip pads for the front legs, so the wardrobe can\'t slide forward.'];
+}
+function sheetText(area, m){
+  const sa = m.sheet[0]*m.sheet[1];
+  const n = Math.max(1, Math.ceil(area / (sa*0.8)));
+  return `Roughly ${n} full sheet${n>1?'s':''} of ${m.sheet[0]*10} × ${m.sheet[1]*10} mm (typical size, ask in store). The cuts use about ${(area/1e4).toFixed(1)} m².`;
+}
+
+// ---------- three.js ----------
+const canvas = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 1, 5000);
+camera.position.set(240, 170, 300);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.target.set(0, 90, 0);
+controls.maxPolarAngle = Math.PI*0.52; controls.minDistance = 120; controls.maxDistance = 900;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f86, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.7);
+sun.position.set(180, 380, 260); sun.castShadow = true;
+sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera, {left:-220,right:220,top:280,bottom:-60,near:10,far:1000});
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(-250, 120, -120); scene.add(fill);
+const floorMat = new THREE.MeshStandardMaterial({color:0xcccccc, roughness:1});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(1400,1400), floorMat);
+floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+const group = new THREE.Group(); scene.add(group);
+const edgeMat = new THREE.LineBasicMaterial({color:0x2a2f31, transparent:true, opacity:.55});
+const matCache = {};
+function mat(c, opts){ const k = c + JSON.stringify(opts||{}); return matCache[k] || (matCache[k] = new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:.85, metalness:0}, opts||{}))); }
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function applyTheme(){
+  scene.background = new THREE.Color(cssVar('--scene') || '#E6E9E3');
+  floorMat.color.set(cssVar('--floor') || '#D3D8CF');
+  const dark = (scene.background.r+scene.background.g+scene.background.b) < 1;
+  edgeMat.color.set(dark ? 0x0c1112 : 0x2a2f31);
+}
+
+let model = null;
+const CLOTH = [0x3E5C76,0x7A8B6F,0xC8B8A6,0x5B4E62,0x9C6B5B,0x2F3E46,0xB9A27E,0x6E7F8C];
+function render3D(){
+  model = build();
+  while(group.children.length){ const c = group.children.pop(); c.traverse(o => { if(o.geometry) o.geometry.dispose(); }); }
+  const ex = S.explode * 28;
+  // the widest door swings open when "Open a door" is on
+  const openSide = S.openDoor && S.doors ? (model.parts.filter(p => p.door && p.side === 'left')[0]?.w >= (model.parts.filter(p => p.door && p.side === 'right')[0]?.w || 0) ? 'left' : 'right') : null;
+  const pivots = {};
+  model.parts.forEach(p => {
+    let mesh;
+    if(p.cyl){
+      mesh = new THREE.Mesh(new THREE.CylinderGeometry(p.w/2, p.w/2*0.8, p.h, 20), mat(p.col, {roughness:.5, metalness:.3}));
+    } else {
+      const g = new THREE.BoxGeometry(p.w, p.h, p.d);
+      let mt = mat(p.col);
+      if(p.glass) mt = mat(p.col, {transparent:true, opacity:.55, roughness:.35});
+      else if(p.door && p.solid) mt = mat(p.col, {transparent:true, opacity:.4});
+      mesh = new THREE.Mesh(g, mt);
+      if(!p.glass) mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(g), edgeMat));
+    }
+    mesh.castShadow = !p.glass; mesh.receiveShadow = true;
+    const px = p.x + p.ex[0]*ex, py = p.y + p.ex[1]*ex, pz = p.z + p.ex[2]*ex;
+    if(p.door && p.side === openSide){
+      if(!pivots[p.side]){
+        const pv = new THREE.Group();
+        pv.position.set(p.hingeX, 0, model.D/2 + .2 + p.ex[2]*ex);
+        pv.rotation.y = p.side === 'left' ? -Math.PI/2 : Math.PI/2;
+        group.add(pv); pivots[p.side] = pv;
+      }
+      mesh.position.set(px - p.hingeX, py, pz - (model.D/2 + .2 + p.ex[2]*ex));
+      pivots[p.side].add(mesh);
+    } else {
+      mesh.position.set(px, py, pz);
+      group.add(mesh);
+    }
+  });
+  const lift = (model.parts.find(p=>p.name==='Top')||{ex:[0,0,0]}).ex[1]*ex*0.6;
+  model.comps.forEach((c, i) => {
+    const len = c[1]-c[0]-.4, cx = (c[0]+c[1])/2;
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,len,16), mat(COL.metal,{metalness:.7,roughness:.3}));
+    rod.rotation.z = Math.PI/2; rod.position.set(cx, model.rodY + lift, 0); rod.castShadow = true; group.add(rod);
+    if(S.clothes){
+      const n = Math.max(2, Math.floor(len/6.5));
+      for(let k=0;k<n;k++){
+        const x = c[0] + 3 + k*(len-6)/(n-1);
+        const long = ((k*7 + i*3) % 5 === 0);
+        const hgt = Math.max(20, Math.min(model.hang, long ? 115 : 80 + ((k*13+i*5)%4)*6));
+        const cm = new THREE.Mesh(new THREE.BoxGeometry(1.4, hgt, Math.min(46, model.D-8)), mat(CLOTH[(k+i*3)%CLOTH.length], {roughness:1}));
+        cm.position.set(x, model.rodY + lift - 4 - hgt/2, 0); cm.castShadow = true; group.add(cm);
+      }
+    }
+  });
+  model.supports.forEach(x => {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(1.5, 6, 3), mat(COL.metal,{metalness:.7,roughness:.3}));
+    s.position.set(x, model.rodY + 3 + lift, 0); group.add(s);
+  });
+  if(S.robot){
+    const r = new THREE.Mesh(new THREE.CylinderGeometry(17.5,17.5,S.robotH-1.5,40), mat(COL.robot,{roughness:.4,metalness:.2}));
+    r.position.set(-model.W*0.2, (S.robotH-1.5)/2, 6); r.castShadow = true; group.add(r);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(4.5,4.5,1.5,24), mat(0x111111));
+    lid.position.set(-model.W*0.2, S.robotH-.75, 10); group.add(lid);
+  }
+  if(S.brace && !S.anchor){
+    const cp = new THREE.Mesh(new THREE.PlaneGeometry(model.W+90, model.D+90), new THREE.MeshBasicMaterial({color:0x8f9a94, transparent:true, opacity:.22, side:THREE.DoubleSide, depthWrite:false}));
+    cp.rotation.x = Math.PI/2; cp.position.set(0, model.H+3, 0); group.add(cp);
+    const fi = S.design === 'C' ? 2.2 : 6;
+    [[-1,1],[1,1],[-1,-1],[1,-1]].forEach(([sx,sz]) => {
+      const f = new THREE.Mesh(new THREE.CylinderGeometry(1.3,1.3,3,16), mat(COL.leg,{metalness:.3,roughness:.5}));
+      f.position.set(sx*(model.W/2-fi), model.H+1.5, sz*(model.D/2-fi)); group.add(f);
+    });
+  }
+  controls.target.set(0, model.H*0.48, 0);
+}
+function resize(){
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if(canvas.width !== Math.floor(w*renderer.getPixelRatio()) || canvas.height !== Math.floor(h*renderer.getPixelRatio())){
+    renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+}
+function loop(){ resize(); controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); }
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+const fmt = v => (Math.round(v*10)/10).toString().replace(/\.0$/,'');
+const RANGES = ['W','H','D','leg','box','split','robotH','ceil','clothesKg','boxKg','ext'];
+const CHECKS = ['divider','doors','back','childSafe','brace','anchor'];
+function syncInputs(){
+  RANGES.forEach(k => { $(k).value = S[k]; });
+  CHECKS.forEach(k => { $(k).checked = S[k]; });
+  $('mat').value = S.mat; $('doorType').value = S.doorType;
+  $('showClothes').checked = S.clothes; $('showRobot').checked = S.robot; $('openDoor').checked = S.openDoor; $('explode').value = S.explode;
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.d === S.design ? 'true' : 'false'));
+}
+const dis = (id, off) => { const el = $(id); el.disabled = off; const c = el.closest('.ctrl'); if(c) c.classList.toggle('disabled', off); };
+function update(){
+  render3D();
+  const M = model, fs = freeStanding();
+  $('oW').textContent = fmt(M.W) + ' cm'; $('oH').textContent = fmt(M.H) + ' cm'; $('oD').textContent = fmt(M.D) + ' cm';
+  $('oleg').textContent = fmt(S.leg) + ' cm'; $('obox').textContent = fmt(M.boxH) + ' cm'; $('osplit').textContent = S.split + ' / ' + (100-S.split);
+  $('orobotH').textContent = fmt(S.robotH) + ' cm'; $('oext').textContent = fmt(M.ext) + ' cm';
+  $('oceil').textContent = fmt(S.ceil) + ' cm'; $('oclothesKg').textContent = S.clothesKg + ' kg'; $('oboxKg').textContent = S.boxKg + ' kg';
+  $('nW').textContent = M.notes.W || ''; $('nD').textContent = M.notes.D || ''; $('nbox').textContent = M.notes.box || '';
+  $('nsplit').textContent = S.divider ? 'Sets the width of each hanging side and each box.' : 'Sets where the two lower boxes divide. The hanging space is one open space.';
+  dis('D', S.design==='B'); dis('mat', S.design==='C'); dis('doorType', !S.doors);
+  dis('H', S.brace && !S.anchor); dis('ceil', !(S.brace && !S.anchor));
+  dis('ext', !(fs && S.childSafe) || S.design==='C'); dis('childSafe', !fs);
+
+  const cw = M.comps.map(c => c[1]-c[0]);
+  const tipV = S.anchor ? 'wall' : S.brace ? 'ceiling' : `${Math.round(M.emptyPull)} kg`;
+  const tipS = S.anchor ? 'held by the wall strap' : S.brace ? 'held by the top feet' : 'pull at 150 cm that tips it, empty';
+  $('stats').innerHTML = [
+    ['Outside size', `${fmt(M.W)} × ${fmt(M.D)} × ${fmt(M.H)}`, 'width × depth × height, cm'],
+    ['Hanging length', `${fmt(M.hang)} cm`, cw.length > 1 ? `rails ${fmt(cw[0])} + ${fmt(cw[1])} cm wide` : `one rail, ${fmt(cw[0])} cm wide`],
+    ['Weight', `≈ ${Math.round(M.weight + M.doorMass)} kg`, M.slabs ? `+ ${Math.round(M.ballast)} kg removable slabs` : 'empty, doors included'],
+    ['Tipping', tipV, tipS]
+  ].map(s => `<div class="stat"><div class="l">${s[0]}</div><div class="v">${s[1]}</div><div class="s">${s[2]}</div></div>`).join('');
+
+  const chk = [];
+  if(S.anchor) chk.push(['ok', 'Child safety: fixed to the wall, so it can\'t tip forward.']);
+  else if(S.brace) chk.push(['ok', 'Child safety: braced against the ceiling, so it can\'t tip while the four top feet press up.']);
+  else if(S.childSafe){
+    chk.push(M.childOK
+      ? ['ok', `Child safety: passes both 27 kg child checks with the wardrobe empty (${Math.round((M.childMargin-1)*100)} % spare)` + (M.slabs ? `, using ${M.slabs} concrete slab${M.slabs>1?'s':''} (${Math.round(M.ballast)} kg) hidden in the box${M.slabs>1?'es':''}` : '') + (M.ext ? ` and the ${M.ext} cm anti-tip foot.` : '.')]
+      : ['bad', 'Child safety: fails even with ballast. Make the base frame stick out further, or use the ceiling brace.']);
+    if(M.slabs >= 4) chk.push(['warn', S.design === 'C' ? `That's ${M.slabs} slabs, because the timber frame has no base frame to extend. Design A needs far less ballast, or use the ceiling brace.` : `That's ${M.slabs} slabs. Making the base frame stick out a few cm further cuts the ballast needed a lot.`]);
+  } else chk.push(['bad', `Not child-safe: free-standing without the kit, it tips with a ${Math.round(M.emptyPull)} kg pull when empty. Turn on the child-safe kit, the ceiling brace or the wall fixing.`]);
+  const clr = S.leg, need = S.robotH + 1.5;
+  chk.push(clr >= need ? ['ok', `Robot fits: ${fmt(clr)} cm under the frame for a ${fmt(S.robotH)} cm robot.`]
+    : clr >= S.robotH + .5 ? ['warn', `Tight: ${fmt(clr)} cm clearance for a ${fmt(S.robotH)} cm robot. Aim for ${fmt(need)} cm legs.`]
+    : ['bad', `Robot won't fit: ${fmt(clr)} cm clearance for a ${fmt(S.robotH)} cm robot.`]);
+  chk.push(M.hang >= 140 ? ['ok', `${fmt(M.hang)} cm of hanging length fits dresses and long coats.`]
+    : M.hang >= 100 ? ['ok', `${fmt(M.hang)} cm of hanging length fits shirts, jackets and trousers. Long coats and dresses need ~140 cm.`]
+    : ['warn', `Only ${fmt(M.hang)} cm of hanging length. Shirts need about 100 cm: add height or lower the boxes.`]);
+  chk.push(M.D >= 55 ? ['ok', `${fmt(M.D)} cm depth leaves room for standard 45 cm hangers.`] : ['warn', `${fmt(M.D)} cm depth is tight for hangers.`]);
+  chk.push(M.supports.length ? ['ok', `The ${fmt(Math.max(...cw))} cm rail gets a centre support, so it won't sag.`] : ['ok', 'Rail span is under 1 m. No sagging with normal loads.']);
+  if(S.back) chk.push(['ok', 'The back panel keeps it square and stops sideways wobble.']); else chk.push(['warn', 'No back panel: add diagonal steel straps across the back.']);
+  if(fs) chk.push(['warn', 'Put anti-slip pads under the front legs, and don\'t stand on the anti-tip foot or the open box shelf.']);
+  $('checks').innerHTML = chk.map(c => `<div class="chk"><span class="pill ${c[0]}">${c[0]==='ok'?'OK':c[0]==='warn'?'CHECK':'FIX'}</span><span>${c[1]}</span></div>`).join('');
+
+  const tb = $('cuts').querySelector('tbody'); let html = '', last = '';
+  M.cuts.forEach(c => { if(c.grp !== last){ html += `<tr class="grp"><td colspan="3">${c.grp}</td></tr>`; last = c.grp; } html += `<tr><td>${c.name}</td><td class="num">${c.qty}</td><td class="num">${c.L} × ${c.Wd}</td></tr>`; });
+  tb.innerHTML = html;
+  $('cutnote').textContent = (S.design==='C' ? 'Battens are listed by length (all 44 × 44 mm). ' : 'Long direction first. Give Hornbach this table as-is. ') + (M.notes.doorWindows ? 'Doors: ' + M.notes.doorWindows : '');
+  $('buy').innerHTML = M.buys.map(b => `<li><b>${b[0]}:</b> ${b[1]}</li>`).join('') + '<li><b>Tools you still need:</b> 2.5 and 3 mm wood drill bits, a countersink bit, PH2 screwdriver bits, tape measure, carpenter\'s square, 2 clamps, spirit level, small hacksaw for the rails, luggage scale for the final test.</li>';
+  $('steps').innerHTML = M.steps.map(s => `<li>${s}</li>`).join('');
+  save();
+}
+function cutText(){
+  const M = model; let s = `Wardrobe cut list (${S.design==='A'?'plywood box':S.design==='B'?'IKEA hybrid':'timber frame'}), all mm\n`, last='';
+  M.cuts.forEach(c => { if(c.grp!==last){ s += `\n${c.grp}\n`; last=c.grp; } s += `  ${c.qty} × ${c.L} × ${c.Wd}  (${c.name})\n`; });
+  if(M.notes.doorWindows) s += `\nDoors: ${M.notes.doorWindows}\n`;
+  return s;
+}
+
+RANGES.forEach(k => $(k).addEventListener('input', e => { S[k] = parseFloat(e.target.value); update(); }));
+CHECKS.forEach(k => $(k).addEventListener('change', e => { S[k] = e.target.checked; update(); }));
+$('mat').addEventListener('change', e => { S.mat = e.target.value; update(); });
+$('doorType').addEventListener('change', e => { S.doorType = e.target.value; update(); });
+$('showClothes').addEventListener('change', e => { S.clothes = e.target.checked; render3D(); save(); });
+$('showRobot').addEventListener('change', e => { S.robot = e.target.checked; render3D(); save(); });
+$('openDoor').addEventListener('change', e => { S.openDoor = e.target.checked; render3D(); save(); });
+$('explode').addEventListener('input', e => { S.explode = parseFloat(e.target.value); render3D(); });
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => { S.design = b.dataset.d; syncInputs(); update(); }));
+$('reset').addEventListener('click', () => { const d = S.design; S = Object.assign({}, DEF, {design:d}); syncInputs(); update(); });
+$('copy').addEventListener('click', () => {
+  const t = cutText(), btn = $('copy');
+  const done = () => { btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy cut list', 1600); };
+  try{ navigator.clipboard.writeText(t).then(done).catch(() => fallback(t, done)); }catch(e){ fallback(t, done); }
+});
+function fallback(t, done){ const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} ta.remove(); }
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+if(mq.addEventListener) mq.addEventListener('change', applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+syncInputs(); applyTheme(); update(); loop();
+})();
+</script>
+
+</body>
+</html>
